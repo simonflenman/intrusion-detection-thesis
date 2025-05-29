@@ -1,5 +1,3 @@
-# src/eval_hdbscan.py
-
 import os
 import sys
 import pandas as pd

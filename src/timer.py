@@ -1,4 +1,3 @@
-# src/timer.py
 import sys
 import time
 import threading
