@@ -4,11 +4,19 @@ import threading
 
 def start_timer():
     """
-    Launch a daemon thread that writes an updating
-    Elapsed: HH:MM:SS clock on the same line.
+    Starts a background daemon thread that continuously updates and displays
+    an elapsed time clock in the console in the format HH:MM:SS.
+
+    The timer runs in a loop, updating every second, and is useful for providing
+    real-time feedback during long-running tasks or scripts.
     """
     t0 = time.time()
+
     def _tick():
+        """
+        Updates and prints the elapsed time on the same console line.
+        Runs indefinitely in a daemon thread.
+        """
         while True:
             elapsed = int(time.time() - t0)
             h, rem = divmod(elapsed, 3600)
@@ -16,4 +24,6 @@ def start_timer():
             sys.stdout.write(f"\rElapsed: {h:02d}:{m:02d}:{s:02d}")
             sys.stdout.flush()
             time.sleep(1)
+
+    # Start the ticking function in a daemon thread
     threading.Thread(target=_tick, daemon=True).start()

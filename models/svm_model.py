@@ -11,7 +11,7 @@ def build_svm(
     random_state: int = 42,
 ) -> Pipeline:
     """
-    Returns a Pipeline that maps your features into an approximate RBF space
+    Returns a Pipeline that maps the features into an approximate RBF space
     via Nystroem, then fits a *quiet* LinearSVC on top.
     """
     return Pipeline([

@@ -12,19 +12,37 @@ MODEL_DIR = 'models'
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 def load_unsup_train(path):
+    """
+    Loads an unsupervised training dataset from a compressed CSV file.
+    Returns the feature matrix as a NumPy array.
+
+    Args:
+        path (str): Path to the compressed CSV file.
+
+    Returns:
+        ndarray: Feature matrix.
+    """
     df = pd.read_csv(path, compression='gzip')
     return df.values
 
 def main():
-    # load
+    """
+    Builds, trains, and saves an autoencoder model using an unsupervised training dataset.
+    Computes a reconstruction error threshold for anomaly detection and saves it to disk.
+    Also saves the trained model in native .keras format.
+
+    Usage:
+        python train_autoencoder.py
+    """
+    # Load unsupervised training data
     X_train = load_unsup_train(os.path.join(DATA_DIR, 'unsupervised_train_data.csv.gz'))
     input_dim = X_train.shape[1]
 
-    # build & compile
+    # Build and compile the autoencoder
     autoenc = build_autoencoder(input_dim=input_dim, bottleneck_dim=16)
     autoenc.compile(optimizer='adam', loss='mse')
 
-    # callbacks → native .keras format
+    # Define callbacks: early stopping and model checkpoint
     ckpt_path = os.path.join(MODEL_DIR, 'autoencoder.keras')
     callbacks = [
         tf.keras.callbacks.EarlyStopping(
@@ -37,7 +55,7 @@ def main():
         )
     ]
 
-    # train
+    # Train the autoencoder
     autoenc.fit(
         X_train, X_train,
         epochs=50,
@@ -47,16 +65,18 @@ def main():
         verbose=2
     )
 
-    # batch‐wise threshold computation
+    # Compute per-sample reconstruction error (MSE) in batches
     mse_batches = []
     for i in range(0, X_train.shape[0], 256):
-        batch = X_train[i:i+256]
+        batch = X_train[i:i + 256]
         rec = autoenc.predict(batch, batch_size=256, verbose=0)
-        mse_batches.append(np.mean((batch - rec)**2, axis=1))
+        mse_batches.append(np.mean((batch - rec) ** 2, axis=1))
     mse = np.concatenate(mse_batches)
+
+    # Set threshold as the 99th percentile of reconstruction errors
     threshold = np.percentile(mse, 99)
 
-    # save threshold
+    # Save threshold to file
     with open(os.path.join(MODEL_DIR, 'threshold.txt'), 'w') as f:
         f.write(f"{threshold:.6f}\n")
 

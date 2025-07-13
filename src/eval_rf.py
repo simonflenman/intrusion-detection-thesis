@@ -1,5 +1,5 @@
 import os, sys
-# make the parent of src/ (i.e. your project root) importable
+# make project root importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 import os
@@ -17,38 +17,62 @@ DATA_DIR  = 'data/processed'
 MODEL_DIR = 'models'
 
 def load_test(path):
+    """
+    Loads a test dataset from a compressed CSV file.
+    Returns feature matrix X and label array y.
+
+    Args:
+        path (str): Path to the compressed CSV file.
+
+    Returns:
+        X (ndarray): Feature matrix.
+        y (ndarray): Label array.
+    """
     df = pd.read_csv(path, compression='gzip')
     y = df['Label'].astype(int).values
     X = df.drop(columns=['Label']).values
     return X, y
 
 def main():
-    # 1) Load test data
+    """
+    Evaluates a trained Random Forest classifier on a preprocessed test dataset.
+    Loads test data and a saved model, predicts labels, and reports metrics
+    including confusion matrix, classification report, and ROC AUC score.
+    Also plots and saves the ROC curve to a file.
+
+    Usage:
+        python eval_rf.py
+    """
+    # Load the test dataset (features and labels)
     test_path = os.path.join(DATA_DIR, 'test_data.csv.gz')
     X_test, y_test = load_test(test_path)
     print(f"Loaded {len(y_test)} test samples")
 
-    # 2) Load trained RF
+    # Load the trained Random Forest model from disk
     model_path = os.path.join(MODEL_DIR, 'rf_model.joblib')
     rf = joblib.load(model_path)
     print(f"Loaded RF model from {model_path}\n")
 
-    # 3) Predict & report
+    # Predict labels on the test set
     y_pred = rf.predict(X_test)
+
+    # Display the confusion matrix
     print("Confusion matrix:")
     print(confusion_matrix(y_test, y_pred), "\n")
+
+    # Display detailed classification metrics
     print("Classification report:")
     print(classification_report(y_test, y_pred, digits=4))
 
-    # 4) ROC & AUC
-    #    RF supports predict_proba
+    # Calculate predicted probabilities for ROC AUC computation
     scores = rf.predict_proba(X_test)[:, 1]
     auc = roc_auc_score(y_test, scores)
     print(f"\nROC AUC: {auc:.4f}")
 
+    # Compute ROC curve points
     fpr, tpr, _ = roc_curve(y_test, scores)
 
-    # 5) Plot & save (headless-friendly)
+    # Plot ROC curve and save it to file
     plt.figure()
     plt.plot(fpr, tpr, label=f"RF (AUC={auc:.3f})")
     plt.plot([0, 1], [0, 1], '--', color='gray', label="random")

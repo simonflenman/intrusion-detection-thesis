@@ -178,16 +178,28 @@ def write_split(mode, zero_day, scaler):
 
 
 def main():
+    """
+    Generates preprocessed data splits for different experimental modes.
+    Calls first_pass() to prepare the initial dataset and scaler, then writes 
+    the requested split to disk based on the provided mode.
+
+    Usage:
+        python generate_split.py --mode [train|test|unsup_train|unsup_test|zero_day]
+    """
+    # Set up argument parser to select which data split to generate
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--mode',
-        choices=['train','test','unsup_train','unsup_test','zero_day'],
+        choices=['train', 'test', 'unsup_train', 'unsup_test', 'zero_day'],
         required=True,
         help='Which split to generate'
     )
     args = parser.parse_args()
 
+    # Run initial data preparation to obtain zero-day subset and fitted scaler
     zero_day, scaler = first_pass()
+
+    # Write out the chosen split using the generated zero-day data and scaler
     write_split(args.mode, zero_day, scaler)
 
 
